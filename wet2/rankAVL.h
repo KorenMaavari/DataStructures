@@ -1,5 +1,5 @@
-#ifndef AVL_H
-#define AVL_H
+#ifndef RANK_AVL_H
+#define RANK_AVL_H
 
 #include <iostream>
 
@@ -329,4 +329,4 @@ class AVL {
         Node<K,D> *m_root;
 };
 
-#endif /* AVL_H */
+#endif /* RANK_AVL_H */
