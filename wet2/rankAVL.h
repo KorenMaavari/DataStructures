@@ -206,8 +206,7 @@ class Node {
         }
 
         // Print tree
-        void printTreeNode(Node<K,D> *root, bool lastChild = true,
-        std::string indent = "") {
+        void printTreeNode(Node<K,D> *root, bool lastChild = true, std::string indent = "") {
             if (root != nullptr) {
                 std::cout << indent;
                 if (lastChild) {
@@ -217,8 +216,8 @@ class Node {
                     std::cout << "L--------";
                     indent += "|      ";
                 }
-                std::cout << "(key:" << root->m_key << ",data:" <<
-                root->m_data << ",v(n):" << root->m_subTreeNodesNum << ")"
+                std::cout << "(key:" << root->m_key << ", data:" <<
+                root->m_data << ", v(n):" << root->m_subTreeNodesNum << ")"
                 << std::endl;
                 this->printTreeNode(root->m_left, false, indent);
                 this->printTreeNode(root->m_right, true, indent);
@@ -227,7 +226,6 @@ class Node {
 
         // Find a node
         Node<K,D> *findNodeNode(Node<K,D> *root, K key) {
-            // Find the node
             Node<K,D> *res = nullptr;
             if (root == nullptr) {
                 return res;
@@ -244,6 +242,7 @@ class Node {
             return res;
         }
 
+        // Delete a node
         void deleteAVLNode(Node<K,D>* root) {
             if (root == nullptr) {
                 return;
@@ -251,6 +250,28 @@ class Node {
             deleteAVLNode(root->m_left);
             deleteAVLNode(root->m_right);
             delete root;
+        }
+
+        // Get rank
+        int getRankNode(Node<K,D> *root, K key, int res) {
+            if (root == nullptr) {
+                return res;
+            }
+            if (root->m_key <= key) {
+                if (root->m_left != nullptr) {
+                    res += 1 + root->m_left->m_subTreeNodesNum;
+                } else {
+                    res += 1;
+                }
+            }
+            if (key < root->m_key) {
+                res = getRankNode(root->m_left, key, res);
+            }
+            else if (key > root->m_key) {
+                res = getRankNode(root->m_right, key, res);
+            }
+            // else, if (key == root->m_key)
+            return res;
         }
 
 
@@ -263,10 +284,10 @@ class Node {
 };
 
 template <class K, class D>
-class AVL {
+class RankAVL {
     public:
         // AVL constructor
-        AVL(Node<K,D>* root = nullptr)
+        RankAVL(Node<K,D>* root = nullptr)
         :
         m_root(root)
         {}
@@ -282,7 +303,7 @@ class AVL {
         }
 
         // Call function of tree's printing
-        void printTreeAVL() {
+        void printTreeRankAVL() {
             if (m_root == nullptr) {
                 std::cout << "The AVL is empty" << std::endl;
             } else {
@@ -324,6 +345,10 @@ class AVL {
             return current;
         }
 
+        // Call rank calculator
+        int getRankRankAVL(K key) {
+            return m_root->getRankNode(m_root, key, 0);
+        }
 
     private:
         Node<K,D> *m_root;
