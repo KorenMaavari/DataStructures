@@ -4,10 +4,10 @@
 #include <iostream>
 
 template <class K, class D>
-class Node {
+class TreeNode {
     public:
-        // node constructor
-        Node(K key, D data)
+        // TreeNode constructor
+        TreeNode(K key, D data)
         :
         m_key(key),
         m_data(data),
@@ -38,7 +38,7 @@ class Node {
             return m_subTreeNodesNum;
         }
 
-        // Calculate the balance value of a node
+        // Calculate the balance value of a TreeNode
         int balanceFactor() {
             if (this == nullptr) {
                 return 0;
@@ -47,9 +47,9 @@ class Node {
         }
 
         // Rotate right
-        Node<K,D> *rightRotate(Node<K,D> *originalRoot) {
-            Node<K,D> *newRoot = originalRoot->m_left;
-            Node<K,D> *subtree = newRoot->m_right;
+        TreeNode<K,D> *rightRotate(TreeNode<K,D> *originalRoot) {
+            TreeNode<K,D> *newRoot = originalRoot->m_left;
+            TreeNode<K,D> *subtree = newRoot->m_right;
             newRoot->m_right = originalRoot;
             originalRoot->m_left = subtree;
             originalRoot->m_height = maxInt(
@@ -67,9 +67,9 @@ class Node {
         }
 
         // Rotate left
-        Node<K,D> *leftRotate(Node<K,D> *originalRoot) {
-            Node<K,D> *newRoot = originalRoot->m_right;
-            Node<K,D> *subtree = newRoot->m_left;
+        TreeNode<K,D> *leftRotate(TreeNode<K,D> *originalRoot) {
+            TreeNode<K,D> *newRoot = originalRoot->m_right;
+            TreeNode<K,D> *subtree = newRoot->m_left;
             newRoot->m_left = originalRoot;
             originalRoot->m_right = subtree;
             originalRoot->m_height = maxInt(
@@ -86,11 +86,12 @@ class Node {
             return newRoot;
         }
 
-        // Insert a node
-        Node<K,D> *insertNodeNode(Node<K,D> *root, Node<K,D> *node) {
+        // Insert a TreeNode
+        TreeNode<K,D> *insertNodeNode(TreeNode<K,D> *root, TreeNode<K,D> *node) {
             // Find the correct location and insert the node
             if (root == nullptr) {
-                return new Node<K,D>(node->m_key, node->m_data);
+                /////////////return new TreeNode<K,D>(node->m_key, node->m_data);
+                return node;
             }
             if (node->m_key < root->m_key) {
                 root->m_left = insertNodeNode(root->m_left, node);
@@ -126,87 +127,83 @@ class Node {
             return root;
         }
 
-        // Node with minimum value
-        Node<K,D> *leftmostNode(Node<K,D> *node) {
-            Node<K,D> *current = node;
+        // TreeNode with minimum value
+        TreeNode<K,D> *leftmostNode(TreeNode<K,D> *node) {
+            TreeNode<K,D> *current = node;
             while (current->m_left != nullptr)
                 current = current->m_left;
             return current;
         }
 
-        // Delete a node
-        Node<K,D> *deleteNodeNode(Node<K,D> *root, K key) {
-            // Find node
+        TreeNode<K,D>* deleteNodeNode(TreeNode<K,D>* root, K key) {
+            // Perform standard BST delete
             if (root == nullptr) {
                 return root;
             }
             if (key < root->m_key) {
                 root->m_left = deleteNodeNode(root->m_left, key);
-                root->m_subTreeNodesNum--;
-            }
-            else if (key > root->m_key) {
+            } else if (key > root->m_key) {
                 root->m_right = deleteNodeNode(root->m_right, key);
-                root->m_subTreeNodesNum--;
-            }
-            else { // delete node
-                if ((root->m_left == nullptr) ||
-                (root->m_right == nullptr)) {
-                    Node<K,D> *temp;
-                    if (root->m_left == nullptr) {
-                        if (root->m_right == nullptr) { // both false
-                            temp = root;
-                            root = nullptr;
-                        } else { // right=true
-                            temp = root->m_right;
-                            *root = *temp;
+            } else {
+                // Node with only one child or no children
+                if ((root->m_left == nullptr) || (root->m_right == nullptr)) {
+                    TreeNode<K,D>* temp = root->m_left ? root->m_left : root->m_right;
+                    // No children
+                    if (temp == nullptr) {
+                        temp = root;
+                        root = nullptr;
+                    } else {
+                        // One child
+                        if (temp == root->m_left) {
+                        } else if (temp == root->m_right) {
                         }
-                    } else { // left=true
-                        temp = root->m_left;
                         *root = *temp;
                     }
-                } else { // both true
-                    Node<K,D> *temp = // next value in inorder
-                    leftmostNode(root->m_right);
+                    delete temp;
+                } else {
+                    // Node with two children: Get the inorder successor (smallest in the right subtree)
+                    TreeNode<K,D>* temp = leftmostNode(root->m_right);
+                    // Copy the inorder successor's content to this node
                     root->m_key = temp->m_key;
                     root->m_data = temp->m_data;
+                    // Delete the inorder successor
                     root->m_right = deleteNodeNode(root->m_right, temp->m_key);
-                    root->m_subTreeNodesNum--;
                 }
             }
-
-            // After the deletion
+            // If the tree had only one node then return
             if (root == nullptr) {
                 return root;
             }
-
-            // Update balance factor for all nodes and balance the tree
-            root->m_height = maxInt(root->m_left->heightGetter(),
-            root->m_right->heightGetter()) + 1;
-            if (root->balanceFactor() >= 2) {
-                if (root->m_left->balanceFactor() >= 0) {
-                    root->m_left = leftRotate(root->m_left); //LL rotation
-                    return leftRotate(root);
-                } else { // if (root->m_left->balanceFactor() <= -1)
-                    root->m_left = leftRotate(root->m_left); //LR rotation
-                    return rightRotate(root);
-                }
+            // Update height and subtree nodes num
+            root->m_height = 1 + maxInt(root->m_left->heightGetter(), root->m_right->heightGetter());
+            root->m_subTreeNodesNum = 1 + root->m_left->getmSubTreeNodesNum() +
+                root->m_right->getmSubTreeNodesNum();
+            // Get the balance factor
+            int balance = root->balanceFactor();
+            // If the node is unbalanced, then there are 4 cases
+            // Left Left Case
+            if (balance > 1 && root->m_left->balanceFactor() >= 0) {
+                return rightRotate(root);
             }
-            if (root->balanceFactor() <= -2) {
-                if (root->m_right->balanceFactor() <= 0) {
-                    root->m_right = // RR rotation
-                    rightRotate(root->m_right);
-                    return rightRotate(root);
-                } else { // if (root->m_right->balanceFactor() >= 1)
-                    root->m_right =
-                    rightRotate(root->m_right); // RL rotation
-                    return leftRotate(root);
-                }
+            // Left Right Case
+            if (balance > 1 && root->m_left->balanceFactor() < 0) {
+                root->m_left = leftRotate(root->m_left);
+                return rightRotate(root);
+            }
+            // Right Right Case
+            if (balance < -1 && root->m_right->balanceFactor() <= 0) {
+                return leftRotate(root);
+            }
+            // Right Left Case
+            if (balance < -1 && root->m_right->balanceFactor() > 0) {
+                root->m_right = rightRotate(root->m_right);
+                return leftRotate(root);
             }
             return root;
         }
 
         // Print tree
-        void printTreeNode(Node<K,D> *root, bool lastChild = true, std::string indent = "") {
+        void printTreeNode(TreeNode<K,D> *root, bool lastChild = true, std::string indent = "") {
             if (root != nullptr) {
                 std::cout << indent;
                 if (lastChild) {
@@ -225,8 +222,8 @@ class Node {
         }
 
         // Find a node
-        Node<K,D> *findNodeNode(Node<K,D> *root, K key) {
-            Node<K,D> *res = nullptr;
+        TreeNode<K,D> *findNodeNode(TreeNode<K,D> *root, K key) {
+            TreeNode<K,D> *res = nullptr;
             if (root == nullptr) {
                 return res;
             }
@@ -243,17 +240,16 @@ class Node {
         }
 
         // Delete a node
-        void deleteAVLNode(Node<K,D>* root) {
+        void deleteAVLNode(TreeNode<K,D>* root) {
             if (root == nullptr) {
                 return;
             }
             deleteAVLNode(root->m_left);
             deleteAVLNode(root->m_right);
-            delete root;
         }
 
         // Get rank
-        int getRankNode(Node<K,D> *root, K key, int res) {
+        int getRankNode(TreeNode<K,D> *root, K key, int res) {
             if (root == nullptr) {
                 return res;
             }
@@ -274,11 +270,61 @@ class Node {
             return res;
         }
 
+        // get index
+        TreeNode<K,D> *getNodeByIndexNode(int index, TreeNode<K,D> *res) {
+            if (res == nullptr) {
+                return nullptr;
+            }
+            if ((res->m_left == nullptr) ||
+                (res->m_right == nullptr)) {
+                    if (res->m_left == nullptr) {
+                        if (res->m_right == nullptr) { // both false
+                            if (index != 1) {
+                                res = nullptr;
+                            } else {
+                                return res;
+                            }
+                        } else { // right=true
+                            if (index == 1) {
+                                return res;
+                            } else {
+                                res = getNodeByIndexNode(index-1, res->m_right);
+                            }
+                        }
+                    } else { // left=true
+                        if (index == res->m_subTreeNodesNum) {
+                            return res;
+                        } else {
+                            res = getNodeByIndexNode(index, res->m_left);
+                        }
+                    }
+                } else { // both true
+                    if (res->m_left->m_subTreeNodesNum == index-1) {
+                        return res;
+                    } else if (res->m_left->m_subTreeNodesNum > index -1) {
+                        res = getNodeByIndexNode(index, res->m_left);
+                    } else { // if (res->m_left->m_subTreeNodesNum < index -1)
+                        res = getNodeByIndexNode(index-(res->m_left->m_subTreeNodesNum)-1, res->m_right);
+                    }
+                }
+                return res;
+        }
+
+        // delete all nodes in inorder
+        void deleteInorder(TreeNode<K,D>* root) {
+            if (root == nullptr) {
+                return;
+            }
+            deleteInorder(root->m_left);
+            deleteInorder(root->m_right);
+            delete root;
+        }
+
 
         K m_key;
         D m_data;
-        Node<K,D> *m_left;
-        Node<K,D> *m_right;
+        TreeNode<K,D> *m_left;
+        TreeNode<K,D> *m_right;
         int m_height;
         int m_subTreeNodesNum;
 };
@@ -287,13 +333,18 @@ template <class K, class D>
 class RankAVL {
     public:
         // AVL constructor
-        RankAVL(Node<K,D>* root = nullptr)
+        RankAVL(TreeNode<K,D>* root = nullptr)
         :
         m_root(root)
         {}
 
+        // AVL destructor
+        ~RankAVL(){
+            m_root->deleteInorder(m_root);
+        }
+
         // Call node insertion
-        void insertNode(Node<K,D>* node) {
+        void insertNode(TreeNode<K,D>* node) {
             m_root = m_root->insertNodeNode(m_root, node);
         }
 
@@ -312,12 +363,12 @@ class RankAVL {
         }
 
         // Call node finding
-        Node<K,D> *findNode(K key) {
+        TreeNode<K,D>* findNode(K key) {
             return m_root->findNodeNode(m_root, key);
         }
 
         // Return tree's root
-        Node<K,D> *getRoot() {
+        TreeNode<K,D> *getRoot() {
             return m_root;
         }
 
@@ -327,18 +378,18 @@ class RankAVL {
             m_root = nullptr;
         }
 
-        // Node with minimum value
-        Node<K,D> *smallestNode() {
-            Node<K,D> *current = m_root;
+        // TreeNode with minimum value
+        TreeNode<K,D> *smallestNode() {
+            TreeNode<K,D> *current = m_root;
             while (current->m_left != nullptr) {
                 current = current->m_left;
             }
             return current;
         }
 
-        // Node with maximum value
-        Node<K,D> *biggestNode() {
-            Node<K,D> *current = m_root;
+        // TreeNode with maximum value
+        TreeNode<K,D> *biggestNode() {
+            TreeNode<K,D> *current = m_root;
             while (current->m_right != nullptr) {
                 current = current->m_left;
             }
@@ -350,8 +401,13 @@ class RankAVL {
             return m_root->getRankNode(m_root, key, 0);
         }
 
+        // call NodeByIndex calculator
+        TreeNode<K,D> *select(int index) {
+            return m_root->getNodeByIndexNode(index, m_root);
+        }
+
     private:
-        Node<K,D> *m_root;
+        TreeNode<K,D> *m_root;
 };
 
 #endif /* RANK_AVL_H */
