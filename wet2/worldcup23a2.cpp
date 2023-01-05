@@ -41,24 +41,36 @@ StatusType world_cup_t::add_team(int teamId)
 	if(teams.findNode(teamId)){
 		return StatusType::FAILURE;
 	}
-	try{	
-		TeamInfo* newTeamInfo = new TeamInfo(teamId);                                       //team cretion
-		Team* newTeam = new Team(teamId);
+    TeamInfo* newTeamInfo = nullptr;
+    Team* newTeam = nullptr;
+    TreeNode<int, Team*>* teamIdNode = nullptr;
+    TreeNode<Team, Team*>* teamRankNode = nullptr;
+	try{
+        newTeamInfo = new TeamInfo(teamId);                                       //team cretion
+		newTeam = new Team(teamId);
 		newTeam->setTeamInfo(newTeamInfo);
 		newTeamInfo->setTeamPtr(newTeam);
 
 		teamDestructionList.append(newTeam, 1);                                             //pointers save
 		teamInfoDestructionList.append(newTeamInfo,1);
 
-		TreeNode<int, Team*>* teamIdNode = new TreeNode<int, Team*>(teamId, newTeam);       //trees insertion
-		TreeNode<Team, Team*>* teamRankNode = new TreeNode<Team, Team*>(*newTeam, newTeam);
-		//////////////////////////////////////////////////////////////////////////////////////
-		//treeDestructionList.append(teamIdNode, 1);				maybe need to delete    // 
-		//rankTreeDestructionList.append(teamRankNode, 1);		nodes also	         //
-		//////////////////////////////////////////////////////////////////////////////////////
+		teamIdNode = new TreeNode<int, Team*>(teamId, newTeam);       //trees insertion
+		teamRankNode = new TreeNode<Team, Team*>(*newTeam, newTeam);
 		teams.insertNode(teamIdNode);
 		prioritizedTeams.insertNode(teamRankNode);
 	}catch(std::exception& e){
+        if(newTeamInfo != nullptr) {
+            delete newTeamInfo;
+        }
+        if(newTeam != nullptr) {
+            delete newTeam;
+        }
+        if(teamIdNode != nullptr) {
+            delete teamIdNode;
+        }
+        if(teamRankNode != nullptr) {
+            delete teamRankNode;
+        }
 		return StatusType::ALLOCATION_ERROR;
 	}
     numOfActiveTeams++;
@@ -102,28 +114,45 @@ StatusType world_cup_t::add_player(int playerId, int teamId,
 	if(!teams.findNode(teamId) || players.exist(playerId)){
 		return StatusType::FAILURE;
 	}
+    Player* newPlayer = nullptr;
+    TreeNode<Team,Team*>* updatedTeamNode = nullptr;
+    Team* teamPtr = nullptr;
+    bool addedAbility = false;
+    try{
+        newPlayer = new Player(playerId, teamId, gamesPlayed, ability, cards, goalKeeper, spirit);
+        TreeNode<int, Team*>* teamNode = teams.findNode(teamId);
+        TreeNode<Team, Team*>*  rankTeamNode = prioritizedTeams.findNode(*(teamNode->m_data));
+        teamPtr = teamNode->m_data;
+        TeamInfo* info = teamNode->m_data->getTeamInfo();
+        if(goalKeeper){
+            info->setGoalKeeper();
+        }
+        if(!info->getTeamHead()){
+            info->setTeamHead(newPlayer);
+            info->setTeamTail(newPlayer);
+        }
+        teamPtr->addToTeamAbility(ability);
+        addedAbility = true;
+        updatedTeamNode = new TreeNode<Team, Team*>(*teamPtr, teamPtr);
+        players.makeSet(newPlayer, info);
+        teamPtr->incSize();
+        prioritizedTeams.deleteNode(*teamPtr);
+        prioritizedTeams.insertNode(updatedTeamNode); // need to name sure
+        playerDestructionList.append(newPlayer, 1);
 
-	Player* newPlayer = new Player(playerId, teamId, gamesPlayed, ability, cards, goalKeeper, spirit);
-	playerDestructionList.append(newPlayer, 1);
-
-	TreeNode<int, Team*>* teamNode = teams.findNode(teamId);
-	TreeNode<Team, Team*>*  rankTeamNode = prioritizedTeams.findNode(*(teamNode->m_data));
-	Team* teamPtr = teamNode->m_data;
-	TeamInfo* info = teamNode->m_data->getTeamInfo();
-    if(goalKeeper){
-        info->setGoalKeeper();
     }
-	if(!info->getTeamHead()){
-		info->setTeamHead(newPlayer);
-		info->setTeamTail(newPlayer);
-	}
-	prioritizedTeams.deleteNode(*teamPtr);
-	teamPtr->addToTeamAbility(ability);
-	teamPtr->incSize();
-	TreeNode<Team,Team*>* updatedTeamNode = new TreeNode<Team, Team*>(*teamPtr, teamPtr);
-	prioritizedTeams.insertNode(updatedTeamNode);
-	players.makeSet(newPlayer, info);
-
+    catch(std::exception& e){
+        if(newPlayer != nullptr){
+            delete newPlayer;
+        }
+        if(updatedTeamNode != nullptr){
+            delete updatedTeamNode;
+        }
+        if(addedAbility){
+            teamPtr->addToTeamAbility(-ability);
+        }
+        return StatusType::ALLOCATION_ERROR;
+    }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		added update teamAbility
 //		remove rankTeam node (like update_player_stats from wet 1)
@@ -323,17 +352,30 @@ StatusType world_cup_t::buy_team(int teamId1, int teamId2)
         return StatusType::SUCCESS;
     }
     if(buyer->getSize() == 0){
-        teams.deleteNode(teamId2);
-        teams.deleteNode(teamId1);
-        prioritizedTeams.deleteNode(*buyer);
-        prioritizedTeams.deleteNode(*bought);
+        TreeNode<int, Team*>* modified = nullptr;
+        TreeNode<Team, Team*>* modifiedRank = nullptr;
+        try{
+            modified = new TreeNode<int, Team*>(teamId1, bought);
+            modifiedRank = new TreeNode<Team, Team*>(*bought, bought);
+            teams.deleteNode(teamId2);
+            teams.deleteNode(teamId1);
+            prioritizedTeams.deleteNode(*buyer);
+            prioritizedTeams.deleteNode(*bought);
 
-        bought->setTeamId(teamId1);
-        bought->getTeamInfo()->setId(teamId1);
-        TreeNode<int, Team*>* modified = new TreeNode<int, Team*>(teamId1, bought);
-        TreeNode<Team, Team*>* modifiedRank = new TreeNode<Team, Team*>(*bought, bought);
-        teams.insertNode(modified);
-        prioritizedTeams.insertNode(modifiedRank);
+            bought->setTeamId(teamId1);
+            bought->getTeamInfo()->setId(teamId1);
+
+            teams.insertNode(modified);
+            prioritizedTeams.insertNode(modifiedRank);
+        }catch(std::exception& e){
+            if(modified != nullptr){
+                delete modified;
+            }
+            if(modifiedRank != nullptr){
+                delete modifiedRank;
+            }
+            return StatusType::ALLOCATION_ERROR;
+        }
         return StatusType::SUCCESS;
     }
 
@@ -342,8 +384,16 @@ StatusType world_cup_t::buy_team(int teamId1, int teamId2)
     teams.deleteNode(teamId2);
     players.Union(info1->getTeamHead()->getId(), info2->getTeamHead()->getId());
     prioritizedTeams.deleteNode(*bought);
-    TreeNode<Team, Team*>* modifiedRank = new TreeNode<Team, Team*>(*buyer, buyer);
-    prioritizedTeams.insertNode(modifiedRank);
+    TreeNode<Team, Team*>* modifiedRank = nullptr;
+    try{
+        modifiedRank = new TreeNode<Team, Team*>(*buyer, buyer);
+        prioritizedTeams.insertNode(modifiedRank);
+    }catch(std::exception& e){
+        if(modifiedRank != nullptr){
+            delete modifiedRank;
+        }
+        return StatusType::ALLOCATION_ERROR;
+    }
     return StatusType::SUCCESS;
 }
 

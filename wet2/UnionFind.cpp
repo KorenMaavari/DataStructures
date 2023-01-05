@@ -2,12 +2,20 @@
 
 
 
-void UnionFind::makeSet(Player* player_ptr, TeamInfo* teamInfo_ptr){
-    int tempArr[5] = {1,2,3,4,5}; int a=0, aa=0; permutation_t temp(tempArr);
+void UnionFind::makeSet(Player* player_ptr, TeamInfo* teamInfo_ptr) {
+    int tempArr[5] = {1, 2, 3, 4, 5};
+    int a = 0, aa = 0;
+    permutation_t temp(tempArr);
     //assuming there's no player in that id already. otherwise, its replacing him:
-
-    PlayerInfo* playerInfo = new PlayerInfo(teamInfo_ptr->getTeamTail()->getId(), player_ptr, teamInfo_ptr);
-
+    PlayerInfo *playerInfo = nullptr;
+    try {
+        playerInfo = new PlayerInfo(teamInfo_ptr->getTeamTail()->getId(), player_ptr, teamInfo_ptr);
+    }catch(std::exception& e){
+        if(playerInfo != nullptr){
+            delete playerInfo;
+        }
+        throw std::bad_alloc();
+    }
     //playersInfosDestructionList.append(playerInfo, 1);
 
     players.insert(playerInfo, player_ptr->getId());

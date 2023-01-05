@@ -69,17 +69,25 @@ void HashTable<Data, Key, HashFunction>::resize(int newSize){
      {
           temp.appendList(table[i]);
      }
-     List<Data, Key>* newTable = new List<Data, Key>[newSize];
-
-     Node<Data, Key>* current = temp.head;
-     while(current != nullptr){
-          int index = hashFunction(current->key);
-          newTable[index].append(current->data, current->key);
-          current = current->next;
+    List<Data, Key>* newTable = nullptr;
+     try{
+         newTable = new List<Data, Key>[newSize];
+         Node<Data, Key>* current = temp.head;
+         while(current != nullptr){
+             int index = hashFunction(current->key);
+             newTable[index].append(current->data, current->key);
+             current = current->next;
+         }
+         delete []table;
+         table = newTable;
+         tableSize = newSize;
+     }catch(std::exception& e){
+         if(newTable != nullptr){
+             delete newTable;
+         }
+         throw std::bad_alloc();
      }
-     delete []table;
-     table = newTable;
-     tableSize = newSize;
+
 }
 
 template<class Data, class Key, class HashFunction>
