@@ -367,10 +367,13 @@ StatusType world_cup_t::buy_team(int teamId1, int teamId2)
         Team tempBuyer(*buyer);
         Team tempBought(*bought);
         try{
+
             bought->setTeamId(teamId1);
             bought->getTeamInfo()->setId(teamId1);
-            modified = new TreeNode<int, Team*>(teamId1, bought);
-            modifiedRank = new TreeNode<Team, Team*>(*bought, bought);
+            modified = new TreeNode<int, Team*>(teamId1, bought);    //   ||
+            modifiedRank = new TreeNode<Team, Team*>(*bought, bought);//  ||
+
+
             teams.deleteNode(teamId2);
             teams.deleteNode(teamId1);
             prioritizedTeams.deleteNode(tempBuyer);
@@ -391,6 +394,8 @@ StatusType world_cup_t::buy_team(int teamId1, int teamId2)
             if(modifiedRank != nullptr){
                 delete modifiedRank;
             }
+            bought->setTeamId(teamId2);
+            bought->getTeamInfo()->setId(teamId2);
             return StatusType::ALLOCATION_ERROR;
         }
         return StatusType::SUCCESS;
@@ -398,11 +403,21 @@ StatusType world_cup_t::buy_team(int teamId1, int teamId2)
 
     TreeNode<Team, Team*>* modifiedRank = nullptr;
     try{
+        /////////////////////////////////////////////////////////////////// maybe this
+        Team tempKey = *buyer;
+        tempKey += *bought;
+        modifiedRank = new TreeNode<Team, Team*>(tempKey, buyer);
+        ///////////////////////////////////////////////////////////////////
+
+
         prioritizedTeams.deleteNode(*buyer);
         teams.deleteNode(teamId2);
         players.Union(info1->getTeamHead()->getId(), info2->getTeamHead()->getId());
         prioritizedTeams.deleteNode(*bought);
-        modifiedRank = new TreeNode<Team, Team*>(*buyer, buyer);
+
+        //////////////////////////////////////////////////////////////////// instead of this
+        //modifiedRank = new TreeNode<Team, Team*>(*buyer, buyer);
+        ////////////////////////////////////////////////////////////////////
         prioritizedTeams.insertNode(modifiedRank);
         if(info2->hasGoalKeeper()){
             info1->setGoalKeeper();
