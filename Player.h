@@ -14,6 +14,7 @@ private:
      bool goalKeeper;
      permutation_t spirit;
 
+
 public:
      Player(int id, int teamId, int gamesPlayed, int ability, int cards, bool goalKeeper, permutation_t spirit);
      ~Player() = default;
